@@ -793,6 +793,43 @@ var performDrop = function(table) {
 
 dexie.addons.push(function(db) {
 
+    db.Collection.prototype.sort = function(fields) {
+      this._sortValue = fields;
+      return this;
+    };
+
+    db.Collection.prototype.toArray = (function(original) {
+      return function(cb) {
+        if (this._sortValue) {
+          var cachedVal = this._sortValue;
+          var sortBy = Object.keys(cachedVal)[0];
+          var sortDir = cachedVal[sortBy];
+          this._sortValue = null; // prevent infinite loop
+          if (sortDir == -1) {
+            return this.reverse().sortBy(sortBy, cb);
+          }
+          return this.sortBy(sortBy, cb);
+        } else {
+          return original.call(this, cb);
+        }
+      }
+    })(db.Collection.prototype.toArray);
+
+    db.Table.prototype.merge = function(objects) {
+      var _this = this;
+      var keepIds = objects.map(function(object) { return object.id });
+      var pruneOp = _this.remove({id: {$nin: keepIds}});
+      return dexie.Promise.all([pruneOp].concat(objects.map(function(object, i) {
+        return _this.findOne({'id': object.id}).then(function(found) {
+          if (!found) {
+            return _this.insert(object);
+          } else {
+            return _this.update({id: object.id}, object);
+          }
+        });
+      })));
+    }
+
     dexie.prototype.collection = function collection(collectionName) {
         return db.table(collectionName);
     };
@@ -814,6 +851,8 @@ dexie.addons.push(function(db) {
     db.Table.prototype.insert = function insert(item) {
         return performInsert(this, item);
     };
+
+    db.Table.prototype.insertOne = db.Table.prototype.insert;
 
     db.Table.prototype.remove = function remove(query) {
         return performRemove(this, query);
