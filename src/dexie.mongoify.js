@@ -817,14 +817,15 @@ dexie.addons.push(function(db) {
 
     db.Table.prototype.merge = function(objects) {
       var _this = this;
-      var keepIds = objects.map(function(object) { return object.id });
-      var pruneOp = _this.remove({id: {$nin: keepIds}});
+      var primKey = this.schema.primKey.keyPath;
+      var keepIds = objects.map(function(object) { return object[primKey] });
+      var pruneOp = _this.remove({[primKey]: {$nin: keepIds}});
       return dexie.Promise.all([pruneOp].concat(objects.map(function(object, i) {
-        return _this.findOne({'id': object.id}).then(function(found) {
+        return _this.findOne({[primKey]: object[primKey]}).then(function(found) {
           if (!found) {
             return _this.insert(object);
           } else {
-            return _this.update({id: object.id}, object);
+            return _this.update({[primKey]: object[primKey]}, object);
           }
         });
       })));
