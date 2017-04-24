@@ -3,7 +3,7 @@ const webpack = require('webpack');
 
 module.exports = {
     entry: {
-      'dexie.mongoify.min': './src/dexie.mongoify.js'
+      'dexie-mongoify': './src/dexie.mongoify.js'
     },
     output: {
         path: './dist',
@@ -11,12 +11,6 @@ module.exports = {
         libraryTarget: 'umd'
     },
     plugins: [
-      new webpack.optimize.UglifyJsPlugin({
-        minimize: true,
-        output: {
-            comments: false
-        }
-      })
     ],
     module: {
       loaders: [
