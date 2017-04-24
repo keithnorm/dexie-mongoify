@@ -1,6 +1,8 @@
 var dexie = require('dexie');
 const ZangoCollection = require('./zango/collection');
 
+dexie.Collection = ZangoCollection;
+
 dexie.addons.push(function(db) {
 
   db._getConn = function(cb) {
