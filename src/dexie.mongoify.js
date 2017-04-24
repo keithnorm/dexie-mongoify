@@ -4,7 +4,9 @@ const ZangoCollection = require('./zango/collection');
 dexie.addons.push(function(db) {
 
   db._getConn = function(cb) {
-    cb(null, this.backendDB());
+    db.open().then(() => {
+      cb(null, this.backendDB());
+    });
   }
 
   dexie.prototype.collection = function collection(collectionName) {
