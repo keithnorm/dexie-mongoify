@@ -1,10 +1,10 @@
 var specHelper = {
     getPeople: function() {
         return [
-            { firstname: 'John', lastname: 'Doe', age: 24 },
-            { firstname: 'Jane', lastname: 'Doe', age: 23 },
-            { firstname: 'Pete', lastname: 'Fox', age: 22 },
-            { firstname: 'Kyle', lastname: 'Riz', age: 17 },
+            { _id: '1', firstname: 'John', lastname: 'Doe', age: 24 },
+            { _id: '2', firstname: 'Jane', lastname: 'Doe', age: 23 },
+            { _id: '3', firstname: 'Pete', lastname: 'Fox', age: 22 },
+            { _id: '4', firstname: 'Kyle', lastname: 'Riz', age: 17 },
         ];
     },
 
@@ -15,7 +15,7 @@ var specHelper = {
 
     setupDatabase: function() {
         var db = new Dexie('Database');
-        db.version(1).stores({ people: '++id, firstname, lastname, age' });
+        db.version(1).stores({ people: '++_id, firstname, lastname, age' });
         db.open();
         return db;
     },

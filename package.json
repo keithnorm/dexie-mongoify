@@ -27,25 +27,32 @@
     "node": ">= 4.2"
   },
   "dependencies": {
-    "only": "^0.0.2",
+    "array-concat": "^0.1.1",
+    "clone": "^2.0.0",
+    "deepmerge": "^1.2.0",
+    "dexie": "^1.5.1",
+    "memoizee": "^0.4.1",
     "object-assign": "^4.1.0",
-    "array-concat": "^0.1.1"
+    "object-hash": "^1.1.4",
+    "only": "^0.0.2",
+    "q": "^1.4.1"
   },
   "devDependencies": {
-    "webpack": "^1.13.1",
+    "babel-core": "^6.24.1",
+    "babel-loader": "^7.0.0",
+    "babel-preset-env": "^1.4.0",
+    "babel-preset-es2015": "^6.24.1",
+    "benchmark": "^2.1.1",
     "eslint": "^3.8.0",
     "jasmine-core": "^2.5.2",
-    "benchmark": "^2.1.1",
     "karma": "^1.3.0",
+    "karma-benchmark": "git+https://github.com/lazd/karma-benchmark.git",
+    "karma-benchmark-reporter": "git+https://github.com/lazd/karma-benchmark-reporter.git",
+    "karma-chrome-launcher": "^2.0.0",
     "karma-jasmine": "^1.0.2",
     "karma-jasmine-matchers": "^3.0.1",
     "karma-mocha-reporter": "^2.2.0",
-    "karma-chrome-launcher": "^2.0.0",
-    "karma-benchmark": "git+https://github.com/lazd/karma-benchmark.git",
-    "karma-benchmark-reporter": "git+https://github.com/lazd/karma-benchmark-reporter.git"
-  },
-  "peerDependencies": {
-    "dexie": ">= 1.3"
+    "webpack": "^1.15.0"
   },
   "license": "MIT"
 }

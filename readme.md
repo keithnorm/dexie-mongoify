@@ -1,3 +1,7 @@
+This fork is an experiment in using [zangodb](https://github.com/erikolson186/zangodb) as the query interface to dexie.
+This adds some Mongo features that dexie-mongoify didn't previously have (like `sort` and `aggregate`) and
+drops support for a few others (mainly update operators like `$pop` `$splice` etc). It's a work in progress.
+
 ## Mongoify
 [![Codeship CI status](https://img.shields.io/codeship/cce4f940-a96b-0133-ca36-7a8c162db443.svg)](https://codeship.com/projects/130881)
 [![Deps](https://david-dm.org/YurySolovyov/dexie-mongoify.svg)](https://david-dm.org/YurySolovyov/dexie-mongoify)
