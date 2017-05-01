@@ -1,4 +1,4 @@
-import clone from 'clone';
+const clone = require('clone');
 const { toPathPieces, get } = require('./util.js');
 
 module.exports = (_next, path) => {

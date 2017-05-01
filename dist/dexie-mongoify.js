@@ -14927,7 +14927,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
-	import clone from 'clone';
+	const clone = __webpack_require__(10);
 	const { toPathPieces, get } = __webpack_require__(8);
 
 	module.exports = (_next, path) => {
