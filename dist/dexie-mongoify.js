@@ -14927,6 +14927,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
+	import clone from 'clone';
 	const { toPathPieces, get } = __webpack_require__(8);
 
 	module.exports = (_next, path) => {
@@ -14943,7 +14944,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            if (new_elements[Symbol.iterator]) {
 	                for (let element of new_elements) {
-	                    elements.push({ [field]: element });
+	                    const objClone = clone(obj);
+	                    objClone[field] = element;
+	                    elements.push(objClone);
 	                }
 	            }
 	        });

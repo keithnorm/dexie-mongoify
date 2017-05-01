@@ -1,3 +1,4 @@
+import clone from 'clone';
 const { toPathPieces, get } = require('./util.js');
 
 module.exports = (_next, path) => {
@@ -14,7 +15,9 @@ module.exports = (_next, path) => {
 
             if (new_elements[Symbol.iterator]) {
                 for (let element of new_elements) {
-                    elements.push({ [field]: element });
+                    const objClone = clone(obj);
+                    objClone[field] = element;
+                    elements.push(objClone);
                 }
             }
         });
