@@ -5,6 +5,7 @@ const createNextFn = require('./create_next_fn.js'),
       filter = require('./filter.js'),
       project = require('./project.js'),
       group = require('./group.js'),
+      lookup = require('./lookup.js'),
       unwind = require('./unwind.js'),
       sort = require('./sort.js'),
       skip = require('./skip.js'),
@@ -36,7 +37,6 @@ class Cursor extends EventEmitter {
         this._read_pref = read_pref;
         this._pipeline = [];
         this._next = this._init;
-        this.id = (new Date()).valueOf();
     }
 
     _forEach(fn, cb) {
@@ -160,17 +160,6 @@ class Cursor extends EventEmitter {
      */
     limit(num) { return this._addStage(limit, num); }
 
-    count(expr, cb) {
-      if (typeof expr == 'function') {
-        cb = expr;
-        expr = {};
-      }
-
-      return this.filter(expr).toArray().then((docs) => {
-        return docs.length;
-      });
-    }
-
     /**
      * Skip over a specified number of documents.
      * @param {number} num The number of documents to skip.
@@ -204,6 +193,11 @@ class Cursor extends EventEmitter {
      * });
      */
     group(spec) { return this._addStage(group, spec); }
+
+    lookup(spec) {
+      spec.db = this._col._db;
+      return this._addStage(lookup, spec);
+    }
 
     /**
      * Deconstruct an iterable and output a document for each element.

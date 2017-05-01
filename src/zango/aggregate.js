@@ -8,7 +8,8 @@ const ops = {
     $unwind: (cur, path) => cur.unwind(path),
     $sort: (cur, spec) => cur.sort(spec),
     $skip: (cur, num) => cur.skip(num),
-    $limit: (cur, num) => cur.limit(num)
+    $limit: (cur, num) => cur.limit(num),
+    $lookup: (cur, spec) => cur.lookup(spec),
 };
 
 const getStageObject = (doc) => {

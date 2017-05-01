@@ -2,7 +2,8 @@ const merge = require('deepmerge');
 
 const { hashify, getIDBError } = require('./util.js'),
       filter = require('./filter.js'),
-      sort = require('./sort.js');
+      sort = require('./sort.js'),
+      lookup = require('./lookup.js');
 
 const {
     build,
@@ -25,17 +26,23 @@ const removeClause = ({ parent, index }) => {
     parent.args.splice(index, 1);
 };
 
-const openConn = ({ col, read_pref }, cb) => {
+const openConn = ({ col, read_pref, pipeline }, cb) => {
     col._db._getConn((error, idb) => {
         if (error) { return cb(error); }
 
         const name = col._name;
+        let names = [name];
+        for (let [fn, arg] of pipeline) {
+          if (fn === lookup) {
+            names.push(arg.from);
+          }
+        }
 
         try {
-            const trans = idb.transaction([name], read_pref);
+            const trans = idb.transaction(names, read_pref);
             trans.onerror = e => cb(getIDBError(e));
 
-            cb(null, trans.objectStore(name));
+            cb(null, trans.objectStore(name), trans);
         } catch (error) { cb(error); }
     });
 };
@@ -190,7 +197,7 @@ const createGetIDBReqFn = ({ pred, clauses, pipeline }) => {
 };
 
 const createGetIDBCurFn = (config) => {
-    let idb_cur, idb_req;
+    let idb_cur, idb_req, idb_transaction;
 
     const getIDBReq = createGetIDBReqFn(config);
 
@@ -210,7 +217,8 @@ const createGetIDBCurFn = (config) => {
     };
 
     let getCur = (cb) => {
-        openConn(config, (error, store) => {
+        openConn(config, (error, store, transaction) => {
+          idb_transaction = transaction;
             if (error) { return cb(error); }
 
             idb_req = getIDBReq(store);
@@ -223,7 +231,11 @@ const createGetIDBCurFn = (config) => {
         });
     };
 
-    return cb => getCur(error => cb(error, idb_cur));
+    return cb => {
+      return getCur(error => {
+        cb(error, idb_cur, idb_transaction);
+      })
+    };
 };
 
 const addPipelineStages = ({ pipeline }, next) => {
@@ -291,9 +303,9 @@ const createNextFn = (config) => {
     const getIDBCur = createGetIDBCurFn(config);
 
     const next = (cb) => {
-        getIDBCur((error, idb_cur) => {
+        getIDBCur((error, idb_cur, idb_transaction) => {
             if (!idb_cur) { cb(error); }
-            else { cb(null, idb_cur.value, idb_cur); }
+            else { cb(null, idb_cur.value, idb_cur, idb_transaction); }
         });
     };
 

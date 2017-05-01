@@ -5329,9 +5329,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	const { getIDBError } = __webpack_require__(8),
 	      Cursor = __webpack_require__(16),
-	      aggregate = __webpack_require__(94),
-	      update = __webpack_require__(95),
-	      remove = __webpack_require__(96);
+	      aggregate = __webpack_require__(95),
+	      update = __webpack_require__(96),
+	      remove = __webpack_require__(97);
 
 	/** Class representing a collection. */
 	class Collection {
@@ -10231,12 +10231,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	const createNextFn = __webpack_require__(18),
 	      filter = __webpack_require__(19),
-	      project = __webpack_require__(88),
-	      group = __webpack_require__(90),
-	      unwind = __webpack_require__(91),
+	      project = __webpack_require__(89),
+	      group = __webpack_require__(91),
+	      lookup = __webpack_require__(86),
+	      unwind = __webpack_require__(92),
 	      sort = __webpack_require__(85),
-	      skip = __webpack_require__(92),
-	      limit = __webpack_require__(93);
+	      skip = __webpack_require__(93),
+	      limit = __webpack_require__(94);
 
 	/**
 	 * Cursor data event.
@@ -10264,7 +10265,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._read_pref = read_pref;
 	        this._pipeline = [];
 	        this._next = this._init;
-	        this.id = (new Date()).valueOf();
 	    }
 
 	    _forEach(fn, cb) {
@@ -10388,17 +10388,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    limit(num) { return this._addStage(limit, num); }
 
-	    count(expr, cb) {
-	      if (typeof expr == 'function') {
-	        cb = expr;
-	        expr = {};
-	      }
-
-	      return this.filter(expr).toArray().then((docs) => {
-	        return docs.length;
-	      });
-	    }
-
 	    /**
 	     * Skip over a specified number of documents.
 	     * @param {number} num The number of documents to skip.
@@ -10432,6 +10421,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * });
 	     */
 	    group(spec) { return this._addStage(group, spec); }
+
+	    lookup(spec) {
+	      spec.db = this._col._db;
+	      return this._addStage(lookup, spec);
+	    }
 
 	    /**
 	     * Deconstruct an iterable and output a document for each element.
@@ -10793,14 +10787,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	const { hashify, getIDBError } = __webpack_require__(8),
 	      filter = __webpack_require__(19),
-	      sort = __webpack_require__(85);
+	      sort = __webpack_require__(85),
+	      lookup = __webpack_require__(86);
 
 	const {
 	    build,
 	    Conjunction,
 	    Disjunction,
 	    Exists
-	} = __webpack_require__(86);
+	} = __webpack_require__(87);
 
 	const toIDBDirection = value => value > 0 ? 'next' : 'prev';
 
@@ -10816,17 +10811,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	    parent.args.splice(index, 1);
 	};
 
-	const openConn = ({ col, read_pref }, cb) => {
+	const openConn = ({ col, read_pref, pipeline }, cb) => {
 	    col._db._getConn((error, idb) => {
 	        if (error) { return cb(error); }
 
 	        const name = col._name;
+	        let names = [name];
+	        for (let [fn, arg] of pipeline) {
+	          if (fn === lookup) {
+	            names.push(arg.from);
+	          }
+	        }
 
 	        try {
-	            const trans = idb.transaction([name], read_pref);
+	            const trans = idb.transaction(names, read_pref);
 	            trans.onerror = e => cb(getIDBError(e));
 
-	            cb(null, trans.objectStore(name));
+	            cb(null, trans.objectStore(name), trans);
 	        } catch (error) { cb(error); }
 	    });
 	};
@@ -10981,7 +10982,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	const createGetIDBCurFn = (config) => {
-	    let idb_cur, idb_req;
+	    let idb_cur, idb_req, idb_transaction;
 
 	    const getIDBReq = createGetIDBReqFn(config);
 
@@ -11001,7 +11002,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    let getCur = (cb) => {
-	        openConn(config, (error, store) => {
+	        openConn(config, (error, store, transaction) => {
+	          idb_transaction = transaction;
 	            if (error) { return cb(error); }
 
 	            idb_req = getIDBReq(store);
@@ -11014,7 +11016,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    };
 
-	    return cb => getCur(error => cb(error, idb_cur));
+	    return cb => {
+	      return getCur(error => {
+	        cb(error, idb_cur, idb_transaction);
+	      })
+	    };
 	};
 
 	const addPipelineStages = ({ pipeline }, next) => {
@@ -11082,9 +11088,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    const getIDBCur = createGetIDBCurFn(config);
 
 	    const next = (cb) => {
-	        getIDBCur((error, idb_cur) => {
+	        getIDBCur((error, idb_cur, idb_transaction) => {
 	            if (!idb_cur) { cb(error); }
-	            else { cb(null, idb_cur.value, idb_cur); }
+	            else { cb(null, idb_cur.value, idb_cur, idb_transaction); }
 	        });
 	    };
 
@@ -13550,6 +13556,34 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 86 */
 /***/ (function(module, exports, __webpack_require__) {
 
+	const Fields = __webpack_require__(20);
+
+	const lookup = (next, spec) => (cb) => {
+	    (function iterate() {
+	        next((error, doc, idb_cur, idb_transaction) => {
+	            if (!doc) { cb(error); }
+	            else if (true) {
+	              const objectStore = idb_transaction.objectStore(spec.from);
+	              const request = objectStore.get(doc[spec.localField]);
+	              request.onerror = function(event) {
+	                cb(new Error(event.target.errorCode));
+	              };
+	              request.onsuccess = (event) => {
+	                doc[spec.as] = event.target.result;
+	                cb(null, doc, idb_cur);
+	              }
+	            } else { iterate(); }
+	        });
+	    })();
+	};
+
+	module.exports = lookup;
+
+
+/***/ }),
+/* 87 */
+/***/ (function(module, exports, __webpack_require__) {
+
 	const {
 	    isObject,
 	    equal,
@@ -13557,7 +13591,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	} = __webpack_require__(8);
 
 	const MISSING = __webpack_require__(84),
-	      Path = __webpack_require__(87),
+	      Path = __webpack_require__(88),
 	      Fields = __webpack_require__(20);
 
 	const isIndexMatchable = (value) => {
@@ -14050,7 +14084,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 87 */
+/* 88 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const { toPathPieces } = __webpack_require__(8);
@@ -14066,7 +14100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 88 */
+/* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const {
@@ -14076,7 +14110,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    copy
 	} = __webpack_require__(8);
 
-	const build = __webpack_require__(89);
+	const build = __webpack_require__(90);
 	const Fields = __webpack_require__(20);
 
 	const addition = (doc, new_doc, new_fields) => {
@@ -14203,12 +14237,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 89 */
+/* 90 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const { unknownOp } = __webpack_require__(8),
 	      MISSING = __webpack_require__(84),
-	      Path = __webpack_require__(87);
+	      Path = __webpack_require__(88);
 
 	class Value {
 	    constructor(value) { this.value = value; }
@@ -14571,13 +14605,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 90 */
+/* 91 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const memoize = __webpack_require__(21);
 
 	const { unknownOp, hashify } = __webpack_require__(8),
-	      build = __webpack_require__(89),
+	      build = __webpack_require__(90),
 	      Fields = __webpack_require__(20);
 
 	class Operator {
@@ -14890,7 +14924,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 91 */
+/* 92 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const { toPathPieces, get } = __webpack_require__(8);
@@ -14934,7 +14968,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 92 */
+/* 93 */
 /***/ (function(module, exports) {
 
 	module.exports = (_next, num) => {
@@ -14953,7 +14987,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 93 */
+/* 94 */
 /***/ (function(module, exports) {
 
 	module.exports = (_next, num) => {
@@ -14969,7 +15003,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 94 */
+/* 95 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const { unknownOp } = __webpack_require__(8);
@@ -14982,7 +15016,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    $unwind: (cur, path) => cur.unwind(path),
 	    $sort: (cur, spec) => cur.sort(spec),
 	    $skip: (cur, num) => cur.skip(num),
-	    $limit: (cur, num) => cur.limit(num)
+	    $limit: (cur, num) => cur.limit(num),
+	    $lookup: (cur, spec) => cur.lookup(spec),
 	};
 
 	const getStageObject = (doc) => {
@@ -15015,7 +15050,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 95 */
+/* 96 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const {
@@ -15153,7 +15188,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ }),
-/* 96 */
+/* 97 */
 /***/ (function(module, exports, __webpack_require__) {
 
 	const { getIDBError } = __webpack_require__(8);
