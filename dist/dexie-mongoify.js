@@ -5372,13 +5372,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    findOne(expr, projection_spec) {
-	        const cur = new Cursor(this, 'readonly');
-
-	        cur.limit(1).filter(expr);
-
-	        if (projection_spec) { cur.project(projection_spec); }
-
-	        return cur;
+	        const cur = this.find(expr, projection_spec);
+	        return cur.toArray().then((docs) => (docs[0]));
 	    }
 
 	    count(expr, cb) {
