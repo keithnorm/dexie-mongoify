@@ -13563,8 +13563,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        next((error, doc, idb_cur, idb_transaction) => {
 	            if (!doc) { cb(error); }
 	            else if (true) {
-	              const objectStore = idb_transaction.objectStore(spec.from);
-	              const request = objectStore.get(doc[spec.localField]).index(spec.foreignField);
+	              const objectStore = idb_transaction.objectStore(spec.from).index(spec.foreignField);
+	              const request = objectStore.get(doc[spec.localField]);
 	              request.onerror = function(event) {
 	                cb(new Error(event.target.errorCode));
 	              };
