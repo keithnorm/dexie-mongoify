@@ -11,7 +11,7 @@ const lookup = (next, spec) => (cb) => {
                 cb(new Error(event.target.errorCode));
               };
               request.onsuccess = (event) => {
-                doc[spec.as] = event.target.result;
+                doc[spec.as] = [event.target.result];
                 cb(null, doc, idb_cur);
               }
             } else { iterate(); }
