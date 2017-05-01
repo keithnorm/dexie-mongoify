@@ -13,7 +13,7 @@ module.exports = {
     plugins: [
     ],
     module: {
-      loaders: [
+      rules: [
         {
           test: /\.js$/,
           exclude: /(node_modules|bower_components)/,
@@ -21,6 +21,13 @@ module.exports = {
           query: {
             "presets": ["es2015"]
           }
+        },
+        {
+          test: /dexie/,
+          use: [{
+            loader: 'expose-loader',
+            options: 'Dexie'
+          }]
         }
       ]
     }

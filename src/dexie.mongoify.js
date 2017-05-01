@@ -1,4 +1,5 @@
-var dexie = require('dexie');
+var dexie = require("expose-loader?Dexie!dexie");
+
 const ZangoCollection = require('./zango/collection');
 
 dexie.Collection = ZangoCollection;
