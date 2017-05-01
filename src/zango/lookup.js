@@ -6,7 +6,7 @@ const lookup = (next, spec) => (cb) => {
             if (!doc) { cb(error); }
             else if (true) {
               const objectStore = idb_transaction.objectStore(spec.from);
-              const request = objectStore.get(doc[spec.localField]);
+              const request = objectStore.get(doc[spec.localField]).index(spec.foreignField);
               request.onerror = function(event) {
                 cb(new Error(event.target.errorCode));
               };
