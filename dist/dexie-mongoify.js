@@ -13557,8 +13557,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    (function iterate() {
 	        next((error, doc, idb_cur, idb_transaction) => {
 	            if (!doc) { cb(error); }
-	            else if (true) {
-	              const objectStore = idb_transaction.objectStore(spec.from).index(spec.foreignField);
+	            else {
+	              let objectStore = idb_transaction.objectStore(spec.from);
+	              if (spec.foreignField != objectStore.keyPath) {
+	                objectStore = objectStore.index(spec.foreignField);
+	              }
 	              const request = objectStore.get(doc[spec.localField]);
 	              request.onerror = function(event) {
 	                cb(new Error(event.target.errorCode));
@@ -13567,7 +13570,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                doc[spec.as] = [event.target.result];
 	                cb(null, doc, idb_cur);
 	              }
-	            } else { iterate(); }
+	            }
 	        });
 	    })();
 	};
