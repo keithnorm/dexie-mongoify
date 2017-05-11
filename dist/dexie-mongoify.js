@@ -13529,7 +13529,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        for (var [path_pieces, order] of sorts) {
 	            const result = compare(a, b, path_pieces, order);
 
-	            if (result !== null) { return result; }
+	            if (result !== null && result !== 0) { return result; }
 	        }
 
 	        return -order;
