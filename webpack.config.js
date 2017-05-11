@@ -10,16 +10,19 @@ module.exports = {
         filename: '[name].js',
         libraryTarget: 'umd'
     },
-    plugins: [
-    ],
     module: {
+      loaders: [
+        {test: /\.js?$/, exclude: /node_modules/, loader: 'babel?cacheDirectory'}
+      ],
       rules: [
         {
           test: /\.js$/,
           exclude: /(node_modules|bower_components)/,
-          loader: 'babel-loader',
-          query: {
-            "presets": ["es2015"]
+          use: {
+            loader: 'babel-loader',
+            options: {
+              presets: ['env'],
+            }
           }
         },
         {
