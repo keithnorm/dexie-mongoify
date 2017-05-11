@@ -54,7 +54,7 @@ const getIDBReqWithIndex = (store, clause) => {
 
     let index;
 
-    if (literal === '_id') { index = store; }
+    if (literal === store.keyPath) { index = store; }
     else { index = store.index(literal); }
 
     return index.openCursor(key_range, direction);
