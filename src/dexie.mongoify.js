@@ -7,9 +7,14 @@ dexie.Collection = ZangoCollection;
 dexie.addons.push(function(db) {
 
   db._getConn = function(cb) {
-    db.open().then(() => {
-      cb(null, this.backendDB());
-    });
+    let db = this.backendDB();
+    if (db) {
+      cb(null, db);
+    } else {
+      db.open().then(function () {
+        cb(null, this.backendDB());
+      });
+    }
   }
 
   dexie.prototype.collection = function collection(collectionName) {
