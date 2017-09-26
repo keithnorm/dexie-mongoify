@@ -111,22 +111,31 @@ const build = (steps, field, value) => {
 };
 
 module.exports = (cur, spec, cb) => {
-    const steps = [];
+  const steps = [];
+  let result = {
+    ok: 0,
+    nModified: 0,
+    n: 0
+  };
 
-    for (let field in spec) { build(steps, field, spec[field]); }
+  for (let field in spec) { build(steps, field, spec[field]); }
 
-    if (!steps.length) { return cb(null); }
+  if (!steps.length) { return cb(null); }
 
-    (function iterate() {
-        cur._next((error, doc, idb_cur) => {
-            if (!doc) { return cb(error); }
+  (function iterate() {
+    cur._next((error, doc, idb_cur) => {
+        if (!doc) { result.ok = error ? 0 : 1; return cb(error, result); }
 
-            for (let fn of steps) { fn(doc); }
+        for (let fn of steps) { fn(doc); }
 
-            const idb_req = idb_cur.update(doc);
+        const idb_req = idb_cur.update(doc);
 
-            idb_req.onsuccess = iterate;
-            idb_req.onerror = e => cb(getIDBError(e));
-        });
-    })();
+        idb_req.onsuccess = () => {
+          result.nModified++;
+          result.n++;
+          iterate();
+        }
+        idb_req.onerror = e => cb(getIDBError(e));
+    });
+  })();
 };

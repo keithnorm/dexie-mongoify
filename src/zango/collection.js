@@ -172,9 +172,9 @@ class Collection {
 
         cur.filter(expr);
 
-        fn(cur, (error) => {
+        fn(cur, (error, result) => {
             if (error) { deferred.reject(error); }
-            else { deferred.resolve(); }
+            else { deferred.resolve(result); }
         });
 
         deferred.promise.nodeify(cb);
