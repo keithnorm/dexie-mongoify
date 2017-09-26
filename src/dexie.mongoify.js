@@ -7,13 +7,13 @@ dexie.Collection = ZangoCollection;
 dexie.addons.push(function(db) {
 
   db._getConn = function(cb) {
-    let db = this.backendDB();
-    if (db) {
-      cb(null, db);
+    let backendDB = this.backendDB();
+    if (backendDB) {
+      cb(null, backendDB);
     } else {
       db.open().then(function () {
         cb(null, this.backendDB());
-      });
+      }.bind(this));
     }
   }
 
